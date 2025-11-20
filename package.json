@@ -1,0 +1,22 @@
+{
+  "name": "real-time-communication-with-socket-io",
+  "private": true,
+  "version": "1.0.0",
+  "description": "MERN real-time chat application with deployment tooling",
+  "workspaces": [
+    "client",
+    "server"
+  ],
+  "scripts": {
+    "lint": "npm run lint -w client && npm run lint -w server",
+    "test": "npm run test -w client && npm run test -w server",
+    "build": "npm run build -w client && npm run build -w server",
+    "build:client": "npm run build -w client",
+    "build:server": "npm run build -w server",
+    "dev:client": "npm run dev -w client",
+    "dev:server": "npm run dev -w server",
+    "start:server": "npm run start -w server"
+  }
+}
+
+
