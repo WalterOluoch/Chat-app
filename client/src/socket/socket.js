@@ -3,15 +3,17 @@
 import { io } from 'socket.io-client';
 import { useEffect, useState } from 'react';
 
-// Socket.io connection URL
-const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || 'http://localhost:5000';
+// Socket.io connection URL - use environment variable
+const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || 'https://rtc-chat-server.onrender.com';
 
-// Create socket instance
+// Create socket instance with better configuration
 export const socket = io(SOCKET_URL, {
-  autoConnect: false,
+  autoConnect: true,
   reconnection: true,
-  reconnectionAttempts: 5,
+  reconnectionAttempts: 10,
   reconnectionDelay: 1000,
+  timeout: 20000,
+  transports: ['websocket', 'polling']
 });
 
 // Custom hook for using socket.io
@@ -24,7 +26,9 @@ export const useSocket = () => {
 
   // Connect to socket server
   const connect = (username) => {
-    socket.connect();
+    if (!socket.connected) {
+      socket.connect();
+    }
     if (username) {
       socket.emit('user_join', username);
     }
@@ -55,10 +59,16 @@ export const useSocket = () => {
     // Connection events
     const onConnect = () => {
       setIsConnected(true);
+      console.log('Connected to server');
     };
 
     const onDisconnect = () => {
       setIsConnected(false);
+      console.log('Disconnected from server');
+    };
+
+    const onConnectError = (error) => {
+      console.error('Connection error:', error);
     };
 
     // Message events
@@ -78,7 +88,6 @@ export const useSocket = () => {
     };
 
     const onUserJoined = (user) => {
-      // You could add a system message here
       setMessages((prev) => [
         ...prev,
         {
@@ -91,7 +100,6 @@ export const useSocket = () => {
     };
 
     const onUserLeft = (user) => {
-      // You could add a system message here
       setMessages((prev) => [
         ...prev,
         {
@@ -111,6 +119,7 @@ export const useSocket = () => {
     // Register event listeners
     socket.on('connect', onConnect);
     socket.on('disconnect', onDisconnect);
+    socket.on('connect_error', onConnectError);
     socket.on('receive_message', onReceiveMessage);
     socket.on('private_message', onPrivateMessage);
     socket.on('user_list', onUserList);
@@ -118,10 +127,16 @@ export const useSocket = () => {
     socket.on('user_left', onUserLeft);
     socket.on('typing_users', onTypingUsers);
 
+    // Auto-connect
+    if (!socket.connected) {
+      socket.connect();
+    }
+
     // Clean up event listeners
     return () => {
       socket.off('connect', onConnect);
       socket.off('disconnect', onDisconnect);
+      socket.off('connect_error', onConnectError);
       socket.off('receive_message', onReceiveMessage);
       socket.off('private_message', onPrivateMessage);
       socket.off('user_list', onUserList);
@@ -146,4 +161,4 @@ export const useSocket = () => {
   };
 };
 
-export default socket; 
+export default socket;
