@@ -1,5 +1,3 @@
-// server.js - Main server file for Socket.io chat application
-
 const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
@@ -19,7 +17,7 @@ dotenv.config();
 const app = express();
 const server = http.createServer(app);
 
-const allowedOrigins = (process.env.CLIENT_URL')
+const allowedOrigins = (process.env.CLIENT_URL || 'http://localhost:5173,https://chat-app-client-theta-five.vercel.app')
   .split(',')
   .map((origin) => origin.trim());
 
@@ -28,6 +26,7 @@ const io = new Server(server, {
     origin: allowedOrigins,
     methods: ['GET', 'POST'],
     credentials: true,
+    transports: ['websocket', 'polling']
   },
 });
 
@@ -35,12 +34,13 @@ const io = new Server(server, {
 app.disable('x-powered-by');
 app.use(
   cors({
-    origin(origin, callback) {
+    origin: function (origin, callback) {
       if (!origin) return callback(null, true);
       if (allowedOrigins.includes(origin)) {
         return callback(null, true);
       }
-      return callback(new Error('Not allowed by CORS'));
+      console.log('Blocked by CORS:', origin);
+      return callback(new Error('Not allowed by CORS'), false);
     },
     credentials: true,
   }),
@@ -183,7 +183,11 @@ app.get('/healthz', async (req, res) => {
 
 // Root route
 app.get('/', (req, res) => {
-  res.send('Socket.io Chat Server is running');
+  res.json({
+    message: 'Socket.io Chat Server is running',
+    timestamp: new Date().toISOString(),
+    environment: process.env.NODE_ENV || 'development'
+  });
 });
 
 // Error handler
@@ -199,6 +203,8 @@ app.use((err, req, res, next) => {
 const PORT = process.env.PORT || 5000;
 server.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
+  console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
+  console.log(`Allowed origins: ${allowedOrigins.join(', ')}`);
 });
 
-module.exports = { app, server, io }; 
+module.exports = { app, server, io };
